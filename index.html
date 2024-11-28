@@ -4,27 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Matterport Showcase</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 </head>
 <body>
   <h1>Welcome to the Showcase</h1>
 
   <!-- The Matterport Showcase iframe -->
-   <!-- The Matterport Showcase iframe -->
-   <iframe
-   id="showcase"
-   width="740"
-   height="480"
-   src="/bundle/showcase.html?m=zQV33R4HsGA&applicationKey=h8m1gx75u1bezk7yaw7yggzwb"
-   frameborder="0"
-   allowfullscreen
-   allow="vr">
- </iframe>
+  <iframe
+    id="showcase"
+    width="740"
+    height="480"
+    src="/bundle/showcase.html?m=zQV33R4HsGA&applicationKey=h8m1gx75u1bezk7yaw7yggzwb"
+    frameborder="0"
+    allowfullscreen
+    allow="vr">
+  </iframe>
 
-  <button onclick="changeCameraAngle()">Change Camera Angle</button>
+  <button id="customCameraButton" onclick="enableCustomCamera()" disabled>
+    Enable Custom Camera
+  </button>
 
   <script>
     // Select the iframe element
     const showcase = document.getElementById('showcase');
+    const customCameraButton = document.getElementById('customCameraButton');
+
+    let mpSdk = null;
 
     // Connect to the Matterport SDK after the iframe loads
     showcase.addEventListener('load', async function () {
@@ -32,41 +37,61 @@
         const showcaseWindow = showcase.contentWindow;
 
         // Wait for the SDK to connect
-        const mpSdk = await showcaseWindow.MP_SDK.connect(showcaseWindow);
+        mpSdk = await showcaseWindow.MP_SDK.connect(showcaseWindow);
         console.log('Connected to MP_SDK:', mpSdk);
 
-        // Store the SDK connection for later use
-        window.mpSdk = mpSdk;
+        // Enable the custom camera button
+        customCameraButton.disabled = false;
       } catch (e) {
         console.error('Error connecting to MP_SDK:', e);
       }
     });
 
-    // Function to change the camera angle
-    async function changeCameraAngle() {
+    // Function to enable the custom camera
+    async function enableCustomCamera() {
       try {
-        const mpSdk = window.mpSdk;
         if (!mpSdk) {
           console.error('SDK is not connected.');
           return;
         }
 
-        // Example: Move the camera to a new position
-        const cameraPosition = await mpSdk.camera.getPosition();
-        console.log('Current Camera Position:', cameraPosition);
+        console.log('Enabling custom camera...');
 
-        // Set a new camera position (this can be any valid 3D position)
-        const newPosition = {
-          x: cameraPosition.x + 1, // Move 1 unit along the X-axis
-          y: cameraPosition.y,     // Keep the Y-axis same
-          z: cameraPosition.z + 1, // Move 1 unit along the Z-axis
-        };
+        // Create a three.js camera object
+        const myCamera = new THREE.PerspectiveCamera(45, 4 / 3, 1, 1000);
+        myCamera.position.set(0, 2, 5); // Initial position of the camera
 
-        // Set the camera to the new position
-        await mpSdk.camera.setPosition(newPosition);
-        console.log('Moved camera to new position:', newPosition);
+        console.log('Created custom THREE.PerspectiveCamera:', myCamera);
+
+        // Create a scene object and a node with a camera component
+        const [sceneObject] = await mpSdk.Scene.createObjects(1);
+        const node = sceneObject.addNode();
+        const cameraComponent = node.addComponent('mp.camera', {
+          enabled: true,
+          camera: myCamera,
+        });
+
+        console.log('Added camera component to node:', cameraComponent);
+
+        // Spy on the ONACCESSGRANTED event
+        class AccessGrantedSpy {
+          constructor() {
+            this.eventType = 'ONACCESSGRANTED';
+          }
+          onEvent(payload) {
+            console.log('Access granted to the custom camera:', payload);
+            console.log('Custom camera is now active.');
+          }
+        }
+
+        // Attach the event spy
+        cameraComponent.spyOnEvent(new AccessGrantedSpy());
+
+        // Start the camera node
+        await node.start();
+        console.log('Custom camera node started.');
       } catch (error) {
-        console.error('Error changing camera angle:', error);
+        console.error('Error enabling custom camera:', error);
       }
     }
   </script>
