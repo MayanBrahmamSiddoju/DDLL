@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matterport Showcase</title>
+</head>
+<body>
+  <h1>Welcome to the Showcase</h1>
+
+  <!-- The Matterport Showcase iframe -->
+   <!-- The Matterport Showcase iframe -->
+   <iframe
+   id="showcase"
+   width="740"
+   height="480"
+   src="/bundle/showcase.html?m=zQV33R4HsGA&applicationKey=h8m1gx75u1bezk7yaw7yggzwb"
+   frameborder="0"
+   allowfullscreen
+   allow="vr">
+ </iframe>
+
+  <button onclick="changeCameraAngle()">Change Camera Angle</button>
+
+  <script>
+    // Select the iframe element
+    const showcase = document.getElementById('showcase');
+
+    // Connect to the Matterport SDK after the iframe loads
+    showcase.addEventListener('load', async function () {
+      try {
+        const showcaseWindow = showcase.contentWindow;
+
+        // Wait for the SDK to connect
+        const mpSdk = await showcaseWindow.MP_SDK.connect(showcaseWindow);
+        console.log('Connected to MP_SDK:', mpSdk);
+
+        // Store the SDK connection for later use
+        window.mpSdk = mpSdk;
+      } catch (e) {
+        console.error('Error connecting to MP_SDK:', e);
+      }
+    });
+
+    // Function to change the camera angle
+    async function changeCameraAngle() {
+      try {
+        const mpSdk = window.mpSdk;
+        if (!mpSdk) {
+          console.error('SDK is not connected.');
+          return;
+        }
+
+        // Example: Move the camera to a new position
+        const cameraPosition = await mpSdk.camera.getPosition();
+        console.log('Current Camera Position:', cameraPosition);
+
+        // Set a new camera position (this can be any valid 3D position)
+        const newPosition = {
+          x: cameraPosition.x + 1, // Move 1 unit along the X-axis
+          y: cameraPosition.y,     // Keep the Y-axis same
+          z: cameraPosition.z + 1, // Move 1 unit along the Z-axis
+        };
+
+        // Set the camera to the new position
+        await mpSdk.camera.setPosition(newPosition);
+        console.log('Moved camera to new position:', newPosition);
+      } catch (error) {
+        console.error('Error changing camera angle:', error);
+      }
+    }
+  </script>
+</body>
+</html>
