@@ -3,95 +3,134 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Matterport Showcase</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <title>Synchronized 3D and Floor Plan Views</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    /* 3D model iframe: Takes up the whole screen */
+    #modelFrame {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Floor Plan iframe: Positioned at the bottom-right corner */
+    #floorPlanFrame {
+      position: absolute;
+      bottom: 10px;   /* 10px from the bottom */
+      right: 10px;    /* 10px from the right */
+      width: 300px;   /* Adjust width of the floor plan iframe */
+      height: 300px;  /* Adjust height of the floor plan iframe */
+      border: none;
+      z-index: 1000;
+    }
+
+    h1 {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      color: white;
+      text-shadow: 0 0 5px black;
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome to the Showcase</h1>
+  <h1>3D Model and Floor Plan</h1>
 
-  <!-- The Matterport Showcase iframe -->
+  <!-- Frame 1: 3D Model View -->
   <iframe
-    id="showcase"
-    width="740"
-    height="480"
-    src="/bundle/showcase.html?m=zQV33R4HsGA&applicationKey=h8m1gx75u1bezk7yaw7yggzwb"
-    frameborder="0"
+    id="modelFrame"
+    src="/bundle/showcase.html?m=zQV33R4HsGA&applicationKey=h8m1gx75u1bezk7yaw7yggzwb&play=1"
     allowfullscreen
     allow="vr">
   </iframe>
 
-  <button id="customCameraButton" onclick="enableCustomCamera()" disabled>
-    Enable Custom Camera
-  </button>
+  <!-- Frame 2: Floor Plan View -->
+  <iframe
+    id="floorPlanFrame"
+    src="/bundle/showcase.html?m=zQV33R4HsGA&applicationKey=h8m1gx75u1bezk7yaw7yggzwb&play=1"
+    allowfullscreen
+    allow="vr">
+  </iframe>
 
   <script>
-    // Select the iframe element
-    const showcase = document.getElementById('showcase');
-    const customCameraButton = document.getElementById('customCameraButton');
+    const modelFrame = document.getElementById('modelFrame');
+    const floorPlanFrame = document.getElementById('floorPlanFrame');
 
-    let mpSdk = null;
+    let modelSdk = null;
+    let floorPlanSdk = null;
 
-    // Connect to the Matterport SDK after the iframe loads
-    showcase.addEventListener('load', async function () {
+    // Connect to the SDK in the 3D model frame
+    modelFrame.addEventListener('load', async () => {
       try {
-        const showcaseWindow = showcase.contentWindow;
+        modelSdk = await modelFrame.contentWindow.MP_SDK.connect(modelFrame.contentWindow);
+        console.log('Connected to 3D Model SDK:', modelSdk);
 
-        // Wait for the SDK to connect
-        mpSdk = await showcaseWindow.MP_SDK.connect(showcaseWindow);
-        console.log('Connected to MP_SDK:', mpSdk);
-
-        // Enable the custom camera button
-        customCameraButton.disabled = false;
-      } catch (e) {
-        console.error('Error connecting to MP_SDK:', e);
+        // Listen for camera pose changes in the 3D model view
+        modelSdk.Camera.pose.subscribe(syncFloorPlan);
+      } catch (error) {
+        console.error('Error connecting to 3D Model SDK:', error);
       }
     });
 
-    // Function to enable the custom camera
-    async function enableCustomCamera() {
+    // Connect to the SDK in the floor plan frame
+    floorPlanFrame.addEventListener('load', async () => {
       try {
-        if (!mpSdk) {
-          console.error('SDK is not connected.');
+        floorPlanSdk = await floorPlanFrame.contentWindow.MP_SDK.connect(floorPlanFrame.contentWindow);
+        console.log('Connected to Floor Plan SDK:', floorPlanSdk);
+
+        // Ensure the floor plan view is set to FLOORPLAN mode
+        await ensureFloorPlanMode();
+
+        console.log('Floor Plan view set to FLOORPLAN mode.');
+      } catch (error) {
+        console.error('Error connecting to Floor Plan SDK:', error);
+      }
+    });
+
+    // Ensure the floor plan is in FLOORPLAN mode before trying to sync
+    async function ensureFloorPlanMode() {
+      try {
+        // If already in FLOORPLAN mode, no need to move
+        const currentMode = await floorPlanSdk.Mode.getCurrentMode();
+        if (currentMode !== floorPlanSdk.Mode.Mode.FLOORPLAN) {
+          await floorPlanSdk.Mode.moveTo(floorPlanSdk.Mode.Mode.FLOORPLAN, {
+            transition: floorPlanSdk.Mode.TransitionType.INSTANT,
+          });
+        }
+      } catch (error) {
+        console.error('Error ensuring FLOORPLAN mode:', error);
+      }
+    }
+
+    // Synchronize the floor plan view with the 3D model camera pose
+    async function syncFloorPlan(pose) {
+      try {
+        if (!floorPlanSdk) {
+          console.warn('Floor Plan SDK is not ready.');
           return;
         }
 
-        console.log('Enabling custom camera...');
+        console.log('Synchronizing Floor Plan view with 3D Model pose:', pose);
 
-        // Create a three.js camera object
-        const myCamera = new THREE.PerspectiveCamera(45, 4 / 3, 1, 1000);
-        myCamera.position.set(0, 2, 5); // Initial position of the camera
+        // Ensure floor plan is in correct mode
+        await ensureFloorPlanMode();
 
-        console.log('Created custom THREE.PerspectiveCamera:', myCamera);
-
-        // Create a scene object and a node with a camera component
-        const [sceneObject] = await mpSdk.Scene.createObjects(1);
-        const node = sceneObject.addNode();
-        const cameraComponent = node.addComponent('mp.camera', {
-          enabled: true,
-          camera: myCamera,
+        // Use Mode.moveTo to update the floor plan view to match the 3D model's current mode and position
+        await floorPlanSdk.Mode.moveTo(floorPlanSdk.Mode.Mode.FLOORPLAN, {
+          transition: floorPlanSdk.Mode.TransitionType.INSTANT,
         });
 
-        console.log('Added camera component to node:', cameraComponent);
-
-        // Spy on the ONACCESSGRANTED event
-        class AccessGrantedSpy {
-          constructor() {
-            this.eventType = 'ONACCESSGRANTED';
-          }
-          onEvent(payload) {
-            console.log('Access granted to the custom camera:', payload);
-            console.log('Custom camera is now active.');
-          }
-        }
-
-        // Attach the event spy
-        cameraComponent.spyOnEvent(new AccessGrantedSpy());
-
-        // Start the camera node
-        await node.start();
-        console.log('Custom camera node started.');
+        console.log('Floor Plan view synchronized successfully.');
       } catch (error) {
-        console.error('Error enabling custom camera:', error);
+        console.error('Error synchronizing Floor Plan view:', error);
       }
     }
   </script>
