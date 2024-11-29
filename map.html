@@ -3,21 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Synchronized 3D and Floor Plan Views</title>
+  <title>Mapbox Example</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+  <link href="./bundle/css/map.css" rel="stylesheet">
   <link href="./bundle/css/index.css" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
+  <div style="display: flex; position: relative;">
+    <!-- Sidebar for layer checkboxes -->
+    <div class="layer-sidebar">
+      <h3>Blocks</h3>
+      <div id="layer-container"></div>
+    </div>
+
+    <!-- Map Container -->
+    <div id="map-container" class="map-container"></div>
+  </div>
+
+  <div class="container" >
+    <!-- Close button -->
+    <button class="close-btn" onclick="closeContainer()">×</button>
+  
     <!-- Aesthetic heading wrapper -->
     <div class="heading-wrapper">
       <div class="heading">
         Immersive 3D Model Viewer
       </div>
     </div>
-
+  
     <!-- Spacer for better layout -->
     <div class="spacer"></div>
-
+  
     <!-- Frame container -->
     <div class="frame-container">
       <!-- Main 3D Model View -->
@@ -27,7 +43,7 @@
         allowfullscreen
         allow="vr">
       </iframe>
-
+  
       <!-- Floor Plan View -->
       <iframe
         id="floorPlanFrame"
@@ -37,7 +53,12 @@
       </iframe>
     </div>
   </div>
+  
 
+
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="./bundle/js/map.js"></script>
   <script src="./bundle/js/index.js"></script>
 </body>
 </html>
