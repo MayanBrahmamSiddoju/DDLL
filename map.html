@@ -1,64 +1,625 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapbox Example</title>
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
-  <link href="./bundle/css/map.css" rel="stylesheet">
-  <link href="./bundle/css/index.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Model and Mapbox Viewer</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <link href="./bundle/css/map.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 300px;
+            height: 100vh;
+            background-color: #f4f4f9;
+            padding: 15px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            box-sizing: border-box;
+            position: fixed;
+            left: -300px;
+            transition: left 0.3s ease-in-out;
+            z-index: 1000;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        /* Toggle Button Style */
+        .sidebar-toggle {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            z-index: 998;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-toggle:hover {
+            background: #45a049;
+            transform: scale(1.1);
+        }
+
+        .sidebar-toggle.active {
+            left: 250px;
+        }
+
+        .sidebar-toggle i {
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-toggle.active i {
+            transform: rotate(180deg);
+        }
+                /* Content and Model Viewer Styles */
+                .content-container {
+            flex: 1;
+            margin-left: 0;
+            transition: margin-left 0.3s ease-in-out;
+            position: relative;
+        }
+
+        .content-container.shifted {
+            margin-left: 300px;
+        }
+
+        /* Enhanced 3D Viewer Styles */
+        .model-viewer {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 92%; /* Increased from 85% */
+    height: 90vh; /* Increased from 80vh */
+    background: rgba(255, 255, 255, 0.95);
+    z-index: 1000;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+        .model-viewer.active {
+            display: block;
+            animation: modelViewerFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modelViewerFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -48%) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        #modelFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 15px;
+            background: #f8f9fa;
+        }
+
+        #floorPlanFrame {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 300px; /* Increased from 250px */
+    height: 300px; /* Increased from 250px */
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    background: white;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+        #floorPlanFrame:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .model-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+        }
+
+        .model-overlay.active {
+            display: block;
+            animation: overlayFadeIn 0.3s ease-out;
+        }
+
+        @keyframes overlayFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Button and Control Styles */
+        .button-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .model-btn {
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-align: left;
+            padding-left: 15px;
+        }
+
+        .model-btn:hover {
+            background-color: #45a049;
+            transform: translateX(5px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+                /* Layer Controls and Other UI Elements */
+                #layer-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .layer-toggle {
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .layer-toggle:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            transform: translateX(5px);
+        }
+
+        .close-button {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1000;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .close-button:hover {
+            background: #ff4444;
+            transform: rotate(90deg);
+        }
+
+        .model-viewer-header {
+    position: absolute;
+    top: 25px; /* Slightly adjusted */
+    left: 30px; /* Slightly adjusted */
+    right: 80px;
+    display: flex;
+    align-items: center;
+    z-index: 1002;
+}
+
+.model-viewer-title {
+    color: #333;
+    font-size: 22px; /* Increased from 20px */
+    font-weight: 600;
+    margin: 0;
+    opacity: 0.9;
+}
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin: 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #4CAF50;
+        }
+
+        .section-divider {
+            height: 2px;
+            background-color: #e0e0e0;
+            margin: 20px 0;
+        }
+
+        #map-container {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Animation for sidebar elements */
+        .sidebar .section-title,
+        .sidebar .layer-toggle,
+        .sidebar .model-btn {
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar.active .section-title,
+        .sidebar.active .layer-toggle,
+        .sidebar.active .model-btn {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Stagger animations */
+        .sidebar.active .section-title { transition-delay: 0.1s; }
+        .sidebar.active .layer-toggle { transition-delay: 0.2s; }
+        .sidebar.active .model-btn:nth-child(1) { transition-delay: 0.3s; }
+        .sidebar.active .model-btn:nth-child(2) { transition-delay: 0.4s; }
+        .sidebar.active .model-btn:nth-child(3) { transition-delay: 0.5s; }
+        .sidebar.active .model-btn:nth-child(4) { transition-delay: 0.6s; }
+        .sidebar.active .model-btn:nth-child(5) { transition-delay: 0.7s; }
+        .sidebar.active .model-btn:nth-child(6) { transition-delay: 0.8s; }
+    </style>
 </head>
 <body>
-  <div style="display: flex; position: relative;">
-    <!-- Sidebar for layer checkboxes -->
-    <div class="layer-sidebar">
-      <h3>Blocks</h3>
-      <div id="layer-container"></div>
-    </div>
+    <button class="sidebar-toggle">
+        <i class="fas fa-bars"></i>
+    </button>
 
-    <!-- Map Container -->
-    <div id="map-container" class="map-container"></div>
-  </div>
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Map Controls Section -->
+            <div class="section-title">Map Controls</div>
+            <div class="layer-sidebar">
+                <div id="layer-container"></div>
+            </div>
 
-  <div class="container" >
-    <!-- Close button -->
-    <button class="close-btn" onclick="closeContainer()">×</button>
-  
-    <!-- Aesthetic heading wrapper -->
-    <div class="heading-wrapper">
-      <div class="heading">
-        Immersive 3D Model Viewer
-      </div>
-    </div>
-  
-    <!-- Spacer for better layout -->
-    <div class="spacer"></div>
-  
-    <!-- Frame container -->
-    <div class="frame-container">
-      <!-- Main 3D Model View -->
-      <iframe
-        id="modelFrame"
-        src="/bundle/showcase.html?m=zQV33R4HsGA&applicationKey=h8m1gx75u1bezk7yaw7yggzwb&play=1"
-        allowfullscreen
-        allow="vr">
-      </iframe>
-  
-      <!-- Floor Plan View -->
-      <iframe
-        id="floorPlanFrame"
-        src="/bundle/showcase.html?m=zQV33R4HsGA&applicationKey=h8m1gx75u1bezk7yaw7yggzwb&play=1"
-        allowfullscreen
-        allow="vr">
-      </iframe>
-    </div>
-  </div>
-  
+            <div class="section-divider"></div>
 
+            <!-- 3D Models Section -->
+            
+        </div>
+                <!-- Content Area -->
+                <div class="content-container">
+                    <div class="model-overlay"></div>
+                    <!-- 3D Model Viewer -->
+                    <div class="model-viewer">
+                        <div class="model-viewer-header">
+                            <h3 class="model-viewer-title">3D Model Viewer</h3>
+                        </div>
+                        <button class="close-button">×</button>
+                        <iframe id="modelFrame" src="" allowfullscreen allow="vr"></iframe>
+                        <iframe id="floorPlanFrame" src="" allowfullscreen allow="vr"></iframe>
+                    </div>
+        
+                    <!-- Map Container -->
+                    <div id="map-container" class="map-container"></div>
+                </div>
+            </div>
+        
+            <!-- Scripts -->
+           <!-- Scripts -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="./bundle/js/map.js"></script>
+<script>
+    // Initialize all DOM elements
+    const sidebarToggle = document.querySelector('.sidebar-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const contentContainer = document.querySelector('.content-container');
+    const modelViewer = document.querySelector('.model-viewer');
+    const modelOverlay = document.querySelector('.model-overlay');
+    const modelFrame = document.getElementById('modelFrame');
+    const floorPlanFrame = document.getElementById('floorPlanFrame');
+    const closeButton = document.querySelector('.close-button');
 
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="./bundle/js/map.js"></script>
-  <script src="./bundle/js/index.js"></script>
-</body>
-</html>
+    // Initialize SDK variables
+    let modelSdk = null;
+    let floorPlanSdk = null;
+    let isInitialSync = true;
+
+    // Sidebar Toggle Functionality
+    sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+        sidebarToggle.classList.toggle('active');
+        contentContainer.classList.toggle('shifted');
+    });
+
+    // Close sidebar when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!sidebar.contains(e.target) && 
+            !sidebarToggle.contains(e.target) && 
+            sidebar.classList.contains('active')) {
+            sidebar.classList.remove('active');
+            sidebarToggle.classList.remove('active');
+            contentContainer.classList.remove('shifted');
+        }
+    });
+
+    // Prevent sidebar close when clicking inside
+    sidebar.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // Enhanced close model viewer function
+    function closeModelViewer() {
+        console.log('Closing model viewer...'); // Debug log
+        
+        // First clear the iframes
+        modelFrame.src = '';
+        floorPlanFrame.src = '';
+        
+        // Then remove active classes
+        modelViewer.classList.remove('active');
+        modelOverlay.classList.remove('active');
+        sidebarToggle.classList.remove('model-open');
+        
+        // Reset SDKs
+        modelSdk = null;
+        floorPlanSdk = null;
+        
+        console.log('Model viewer closed'); // Debug log
+    }
+
+    // Multiple close button event listeners
+    closeButton.addEventListener('click', function(e) {
+        console.log('Close button clicked'); // Debug log
+        e.preventDefault();
+        e.stopPropagation();
+        closeModelViewer();
+    });
+
+    closeButton.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+
+    // Add touch event for mobile
+    closeButton.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeModelViewer();
+    });
+
+    // Close on overlay click
+    modelOverlay.addEventListener('click', function(e) {
+        if (e.target === modelOverlay) {
+            closeModelViewer();
+        }
+    });
+
+    // Escape key handler
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (modelViewer.classList.contains('active')) {
+                closeModelViewer();
+            }
+            if (sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                sidebarToggle.classList.remove('active');
+                contentContainer.classList.remove('shifted');
+            }
+        }
+    });
+
+    // Model SDK Connection
+    modelFrame.addEventListener('load', async () => {
+        try {
+            modelSdk = await modelFrame.contentWindow.MP_SDK.connect(modelFrame.contentWindow);
+            console.log('Connected to 3D Model SDK:', modelSdk);
+            
+            modelSdk.Camera.pose.subscribe((pose) => {
+                syncFloorPlan(pose);
+            });
+
+            modelSdk.on(modelSdk.Mattertag.Event.CLICK, syncFloorPlan);
+            modelSdk.on(modelSdk.Pointer.Event.CLICK, syncFloorPlan);
+            
+            await syncFloorPlan(modelSdk.Camera.pose.current);
+        } catch (error) {
+            console.error('Error connecting to 3D Model SDK:', error);
+        }
+    });
+
+    // Floor Plan SDK Connection
+    floorPlanFrame.addEventListener('load', async () => {
+        try {
+            floorPlanSdk = await floorPlanFrame.contentWindow.MP_SDK.connect(floorPlanFrame.contentWindow);
+            console.log('Connected to Floor Plan SDK:', floorPlanSdk);
+            await ensureFloorPlanMode();
+            await addFloorPlanMarker();
+        } catch (error) {
+            console.error('Error connecting to Floor Plan SDK:', error);
+        }
+    });
+
+    // Add Floor Plan Marker
+    async function addFloorPlanMarker() {
+        try {
+            if (!floorPlanSdk) return;
+            
+            // Remove existing markers
+            const existingMarkers = await floorPlanSdk.Mattertag.getData();
+            for (const marker of existingMarkers) {
+                await floorPlanSdk.Mattertag.remove(marker.sid);
+            }
+
+            // Add new position marker
+            await floorPlanSdk.Mattertag.add({
+                label: "Current Position",
+                description: "",
+                anchorPosition: { x: 0, y: 0, z: 0 },
+                stemVector: { x: 0, y: 0, z: 0.1 },
+                color: { r: 1, g: 0, b: 0 },
+                floorIndex: 0
+            });
+        } catch (error) {
+            console.error("Error adding floor plan marker:", error);
+        }
+    }
+
+    // Floor Plan Sync Function
+    async function syncFloorPlan(pose) {
+        try {
+            if (!floorPlanSdk || !pose) return;
+            
+            if (!pose.position) {
+                pose = { position: { x: 0, y: 0, z: 0 } };
+            }
+
+            await ensureFloorPlanMode();
+
+            // Update marker position
+            const markers = await floorPlanSdk.Mattertag.getData();
+            if (markers.length > 0) {
+                await floorPlanSdk.Mattertag.editPosition(markers[0].sid, {
+                    anchorPosition: pose.position,
+                    stemVector: { x: 0, y: 0, z: 0.1 }
+                });
+            }
+
+            // Increased zoom levels
+            const zoomLevel = isInitialSync ? 8.5 : 7.5;
+
+            await floorPlanSdk.Camera.zoomTo({
+                position: pose.position,
+                rotation: { x: -85, y: 0, z: 0 },
+                zoom: zoomLevel,
+                transition: {
+                    duration: 400,
+                    easing: 'easeInOutQuad'
+                }
+            });
+        } catch (error) {
+            console.error("Error synchronizing Floor Plan view:", error);
+        }
+    }
+
+    // Ensure Floor Plan Mode
+    async function ensureFloorPlanMode() {
+        try {
+            if (!floorPlanSdk) return;
+            
+            await floorPlanSdk.Mode.moveTo(floorPlanSdk.Mode.Mode.FLOORPLAN, {
+                transition: floorPlanSdk.Mode.TransitionType.FLY
+            });
+
+            await floorPlanSdk.Floor.showAll();
+            await floorPlanSdk.Camera.setRotation({
+                x: -85,
+                y: 0,
+                z: 0
+            });
+        } catch (error) {
+            console.error("Error ensuring FLOORPLAN mode:", error);
+        }
+    }
+
+    // Model Button Click Handlers
+    document.querySelectorAll('.model-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const modelId = button.getAttribute('data-model-id');
+            const modelName = button.textContent;
+            
+            // Clear existing content first
+            modelFrame.src = '';
+            floorPlanFrame.src = '';
+            
+            // Reset SDKs
+            modelSdk = null;
+            floorPlanSdk = null;
+            
+            // Show the viewer
+            modelViewer.classList.add('active');
+            modelOverlay.classList.add('active');
+            sidebarToggle.classList.add('model-open');
+            document.querySelector('.model-viewer-title').textContent = modelName;
+            
+            // Load new model
+            setTimeout(() => {
+                changeModel(modelId);
+            }, 100);
+        });
+    });
+
+    // Change Model Function
+    function changeModel(modelId) {
+        const modelUrl = `/bundle/showcase.html?m=${modelId}&applicationKey=h8m1gx75u1bezk7yaw7yggzwb&play=1`;
+        modelFrame.src = modelUrl;
+        floorPlanFrame.src = modelUrl;
+        isInitialSync = true;
+    }
+
+    // Top-down view toggle
+    window.addEventListener('keydown', (event) => {
+        if (event.key.toLowerCase() === 't') {
+            syncFloorPlan(modelSdk.Camera.pose.current);
+        }
+    });
+</script>
+        </body>
+        </html>

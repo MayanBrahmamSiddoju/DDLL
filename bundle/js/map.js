@@ -202,96 +202,138 @@ function toggleLayerVisibility(layerName) {
 }
 
 // Handle floor selection and update markers
+// map.js
+
+// Keep all your existing initialization code until handleFloorSelection
+
+// Modified handleFloorSelection function
 function handleFloorSelection(selectedFloor) {
-  // Remove existing floor markers before adding new ones
-  floorMarkers.forEach((marker) => marker.remove());
-
-  // Filter features based on selected floor
-  const filteredFeatures = geojsonData.features.filter(
-    (feature) => feature.properties.Floor === selectedFloor
-  );
-
-  // Create markers for each feature
-  floorMarkers = filteredFeatures.map((feature) => {
-    const [lng, lat] = feature.geometry.coordinates;
-    const marker = new mapboxgl.Marker()
-      .setLngLat([lng, lat])
-      .addTo(map);
-
-    // Add click event listener to each marker
-    marker.getElement().addEventListener('click', () => {
-      selectedLocation = {
-        name: feature.properties.Space,  // Log the 'Space' property
-        floor: feature.properties.Floor,
-        coordinates: [lng, lat],
-      };
-
-      // If you want to log just the 'Space' property, you can do this as well:
-      console.log('Selected Space:', feature.properties.Space);
-    });
-
-    return marker;
-  });
-}
-
-// Handle floor selection and update markers
-function handleFloorSelection(selectedFloor) {
-  // Remove existing floor markers before adding new ones
-  floorMarkers.forEach((marker) => marker.remove());
-
-  // Filter features based on selected floor
-  const filteredFeatures = geojsonData.features.filter(
-    (feature) => feature.properties.Floor === selectedFloor
-  );
-
-  // Create markers for each feature
-  floorMarkers = filteredFeatures.map((feature) => {
-    const [lng, lat] = feature.geometry.coordinates;
-    const marker = new mapboxgl.Marker()
-      .setLngLat([lng, lat])
-      .addTo(map);
-
-    // Add click event listener to each marker
-    marker.getElement().addEventListener('click', () => {
-      const selectedSpace = feature.properties.Space; // Get the 'Space' property
-      selectedLocation = {
-        name: selectedSpace,
-        floor: feature.properties.Floor,
-        coordinates: [lng, lat],
-      };
-
-      // Log the selected space
-      console.log('Selected Space:', feature.properties.m);
-      updateIframeSrc(feature.properties.m)
-      openContainer();
-    });
-
-    return marker;
-  });
-}
-
-// Function to update iframe source
-function updateIframeSrc(value) {
-  const iframe1 = document.getElementById('modelFrame');
-  const iframe2 = document.getElementById('floorPlanFrame');
-
+  console.log('Handling floor selection:', selectedFloor);
   
-  // Define your mapping logic or rules to generate the new src URL
-  const newSrc1 = `/bundle/showcase.html?m=${value}&applicationKey=h8m1gx75u1bezk7yaw7yggzwb&play=1`;
-  const newSrc2 = `/bundle/showcase.html?m=${value}&applicationKey=h8m1gx75u1bezk7yaw7yggzwb&play=1`;
+  floorMarkers.forEach(marker => marker.remove());
+  floorMarkers = [];
 
+  const filteredFeatures = geojsonData.features.filter(
+      feature => feature.properties.Floor === selectedFloor
+  );
+  
+  console.log('Filtered features:', filteredFeatures);
 
-  // Update the iframe src attribute
-  iframe1.src = newSrc1;
-  iframe2.src = newSrc2
+  filteredFeatures.forEach(feature => {
+      const el = document.createElement('div');
+      el.className = 'marker';
+      el.setAttribute('data-floor', feature.properties.Floor);
 
-  // Log the updated src for debugging
-  console.log('Updated iframe1 src:', newSrc1);
-  console.log('Updated iframe1 src:', newSrc2);
+      const marker = new mapboxgl.Marker({
+          element: el,
+          anchor: 'bottom',
+          offset: [0, 0],
+          clickTolerance: 3
+      })
+          .setLngLat(feature.geometry.coordinates)
+          .addTo(map);
 
+      el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          console.log('Marker clicked:', feature.properties);
+          
+          if (feature.properties.m) {
+              openModelViewer(feature.properties.m, feature.properties.Space);
+          }
+      });
+
+      floorMarkers.push(marker);
+  });
 }
 
+function openModelViewer(modelId, spaceName) {
+  const modelViewer = document.querySelector('.model-viewer');
+  const modelOverlay = document.querySelector('.model-overlay');
+  const modelFrame = document.getElementById('modelFrame');
+  const floorPlanFrame = document.getElementById('floorPlanFrame');
+  const modelTitle = document.querySelector('.model-viewer-title');
 
+  modelTitle.textContent = spaceName || 'View Model';
+  const modelUrl = `/bundle/showcase.html?m=${modelId}&applicationKey=h8m1gx75u1bezk7yaw7yggzwb&play=1`;
+  
+  modelFrame.src = modelUrl;
+  floorPlanFrame.src = modelUrl;
 
-// Initialize the map
+  modelViewer.classList.add('active');
+  modelOverlay.classList.add('active');
+}
+
+const markerStyles = `
+.marker {
+  width: 20px;
+  height: 20px;
+  background-color: #4CAF50;
+  border: 2px solid #ffffff;
+  border-radius: 50% 50% 50% 0;
+  cursor: pointer !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  transform: rotate(-45deg);
+  position: relative;
+  animation: dropIn 0.5s ease-out;
+}
+
+.marker::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.marker:hover {
+  transform: rotate(-45deg) scale(1.1);
+  background-color: #45a049;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+
+.marker[data-floor="Ground"] {
+  background-color: #4CAF50;  /* Green */
+}
+
+.marker[data-floor="First"] {
+  background-color: #2196F3;  /* Blue */
+}
+
+.marker[data-floor="Second"] {
+  background-color: #FF9800;  /* Orange */
+}
+
+@keyframes dropIn {
+  from {
+      transform: rotate(-45deg) translateY(-20px);
+      opacity: 0;
+  }
+  to {
+      transform: rotate(-45deg) translateY(0);
+      opacity: 1;
+  }
+}
+`;
+
+const styleSheet = document.createElement('style');
+styleSheet.textContent = markerStyles;
+document.head.appendChild(styleSheet);
+
+document.querySelector('.close-button').addEventListener('click', () => {
+  const modelViewer = document.querySelector('.model-viewer');
+  const modelOverlay = document.querySelector('.model-overlay');
+  const modelFrame = document.getElementById('modelFrame');
+  const floorPlanFrame = document.getElementById('floorPlanFrame');
+
+  modelViewer.classList.remove('active');
+  modelOverlay.classList.remove('active');
+  modelFrame.src = '';
+  floorPlanFrame.src = '';
+});
+
 initializeMap();
