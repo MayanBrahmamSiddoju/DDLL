@@ -1,87 +1,4 @@
-/* Sidebar for layer checkboxes */
-.layer-sidebar {
-    margin-left: 0;
-    width: 230px;
-    background-color: rgba(255, 255, 255, 0.9);
-    overflow-y: auto;
-    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
-  }
-  
-  .layer-sidebar h3 {
-    color: black;
-  }
-  
-  /* Layer checkbox container */
-  .layer-checkbox-container {
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  /* Color box next to the checkbox */
-  .layer-color-box  {
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
-    margin-right: 10px;
-    display: inline-block;
-  }
-  
-  /* Label for checkbox */
-  .layer-checkbox-container label {
-    color: black;
-  }
-  
-  /* Checkbox itself */
-  .layer-checkbox-container input {
-    margin-right: 10px;
-  }
-  
-  /* Map container */
-  .map-container {
-    width: 100vw;
-    height: 100vh;
-  }
-  #map-container {
-    height: 100%;
-    width: 100%;
-    transition: margin-left 0.4s ease; /* Smooth transition for the map */
-}
-
-#map-container.shifted {
-    margin-left: -27%; /* Move the map 20% to the left */
-}
-  
-  
-  /* Marker for map locations */
-  .marker {
-    width: 20px;
-    height: 20px;
-    background-color: red;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-  
-  /* Floors button inside the location sidebar */
-  .floors {
-    display: block;
-    padding: 5px;
-    margin-bottom: 5px;
-    background-color: #4682B4; /* You can change the color here */
-    color: white;
-    border: none;
-    cursor: pointer;
-    border-radius: 4px;
-    width:70px;
-    text-align: left;
-   
-  }
-  
-  /* Hover effect for floor buttons */
-  .floors:hover {
-    background-color: #000000; /* Hover effect */
-  }
-
-  body {
+body {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
@@ -174,7 +91,7 @@
 
 /* Enhanced 3D Viewer Styles */
 .model-viewer {
-    
+   
     position: fixed;
     top: 0;
     right: -50%;
@@ -182,9 +99,10 @@
     height: 100vh;
     background: rgba(255, 255, 255, 0.95);
     z-index: 1000;
-    box-shadow: -5px 0px 25px rgba(0, 0, 0, 0.15);
+    border-radius:0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     overflow: hidden;
-    border-radius: 10px;
+    backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.5);
     padding: 0;
     box-sizing: border-box;
@@ -192,39 +110,34 @@
 }
 
 .model-viewer.active {
-    
+   
     right: 0;
 }
 
 #modelFrame {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 10px;
-    background: #f8f9fa;
+    width: 100%; /* Full width of the slider */
+    height: 100%; /* Full height of the slider */
+    border: none; /* Remove border */
+    border-radius: 0; /* Remove any border radius for full coverage */
+    background: #f8f9fa; /* Optional: background color can remain */
 }
 
 #floorPlanFrame {
     position: absolute;
-    bottom: 3px;
-    right: 3px;
-    width: 270px; /* Increased from 250px */
-    height: 270px; /* Increased from 250px */
+    bottom: 30px;
+    right: 30px;
+    width: 300px; /* Increased from 250px */
+    height: 300px; /* Increased from 250px */
     border: none;
-    border-radius: 10px;
+    border-radius: 15px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     background: white;
     overflow: hidden;
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
 }
 
-
-#floorPlanFrame.zoomed {
-  transform: scale(1.2); /* Zoom in by 20% */
-} 
-
 #floorPlanFrame:hover {
-    transform: scale(1.008);
+    transform: scale(1.05);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
@@ -309,9 +222,9 @@
 
 .model-viewer-header {
     position: absolute;
-    top: 1px; /* Slightly adjusted */
-    left: 1px; /* Slightly adjusted */
-    right:4px;
+    top: 25px; /* Slightly adjusted */
+    left: 30px; /* Slightly adjusted */
+    right: 80px;
     display: flex;
     align-items: center;
     z-index: 1002;
@@ -370,4 +283,3 @@
 .sidebar.active .model-btn:nth-child(4) { transition-delay: 0.6s; }
 .sidebar.active .model-btn:nth-child(5) { transition-delay: 0.7s; }
 .sidebar.active .model-btn:nth-child(6) { transition-delay: 0.8s; }
-  

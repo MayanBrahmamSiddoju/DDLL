@@ -127,13 +127,15 @@ function addPannel(geojsonData) {
   const floorPanel = document.createElement('div');
   floorPanel.className = 'floor-panel';
   floorPanel.style.marginLeft = '30px';
+  floorPanel.style.marginTop = '15px';
   floorPanel.style.paddingLeft = '4px';
   floorPanel.style.paddingRight = '20px';
   floorPanel.style.color = 'black';
 
   const ul = document.createElement('ul');
   ul.style.paddingLeft = '8px';
-  ul.style.margin = '5px';
+  ul.style.margin = '15px';
+  ul.style.marginTop='8px';
 
   geojsonData.floors.forEach((floor, index) => {
     const li = document.createElement('li');
@@ -253,9 +255,9 @@ function openModelViewer(modelId, spaceName) {
   const floorPlanFrame = document.getElementById('floorPlanFrame');
   const modelTitle = document.querySelector('.model-viewer-title');
 
-  modelTitle.textContent = spaceName || 'View Model';
+  //modelTitle.textContent = spaceName || 'View Model';
   const modelUrl = `/bundle/showcase.html?m=${modelId}&applicationKey=h8m1gx75u1bezk7yaw7yggzwb&play=1`;
-  
+  document.getElementById('map-container').classList.add('shifted'); // Shift the map
   modelFrame.src = modelUrl;
   floorPlanFrame.src = modelUrl;
 
@@ -329,7 +331,7 @@ document.querySelector('.close-button').addEventListener('click', () => {
   const modelOverlay = document.querySelector('.model-overlay');
   const modelFrame = document.getElementById('modelFrame');
   const floorPlanFrame = document.getElementById('floorPlanFrame');
-
+  document.getElementById('map-container').classList.add('shifted'); // Shift the map
   modelViewer.classList.remove('active');
   modelOverlay.classList.remove('active');
   modelFrame.src = '';
